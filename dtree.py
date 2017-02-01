@@ -19,14 +19,16 @@ class tree:
 
 
 def to_binary_classifier(classifier,number):
+    list=[]
     for x in range(0,len(classifier)):
         if classifier[x][0] == number:
-            classifier[x][0] = 1
+            list.append(1)
         else:
-            classifier[x][0] = 0
-    return classifier
+            list.append(0)
+    return list
 
-
+print(to_binary_classifier(classification1,1))
+print(classification1)
 
 
 
