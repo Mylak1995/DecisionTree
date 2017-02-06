@@ -1,6 +1,6 @@
 import scipy.io as sio
 import numpy as np
-import pdb
+
 
 my_data1=sio.loadmat('cleandata_students.mat')
 data1=my_data1['x']
@@ -49,7 +49,7 @@ def choose_best_decision_attribute(examples,attributes,binary_targets):
         if max<value:
             max = value
             index = x
-    return attributes[x]
+    return attributes[index]
 
 def attribute_calculation(examples,index,binary_targets):
     p0, n0, p1, n1=0, 0, 0, 0
@@ -132,17 +132,69 @@ examples=data1
 bin_targets=to_binary_classifier(classification1,6)
 trained = decision_tree_learning(examples,attributes,bin_targets)
 print(trained.op)
-new=to_newick(trained)+";"
-print(new)
-from ete3 import Tree as Tr
-from ete3 import TreeStyle, Tree, TextFace, add_face_to_node
-t = Tr(new,format=8)
+#new=to_newick(trained)+";"
+#print(new)
+#from ete3 import Tree as Tr
+#from ete3 import TreeStyle, Tree, TextFace, add_face_to_node
+#t = Tr(new,format=8)
 
-ts = TreeStyle()
-ts.rotation = 90
-ts.show_leaf_name = False
-def my_layout(node):
-        F = TextFace(node.name, tight_text=True)
-        add_face_to_node(F, node, column=0, position="branch-right")
-ts.layout_fn = my_layout
-t.show(tree_style=ts)
+#ts = TreeStyle()
+#ts.rotation = 90
+#ts.show_leaf_name = False
+#def my_layout(node):
+#        F = TextFace(node.name, tight_text=True)
+#        add_face_to_node(F, node, column=0, position="branch-right")
+#ts.layout_fn = my_layout
+#t.show(tree_style=ts)
+
+
+
+
+import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
+
+def treeWidth(node):
+    if node.isLeaf():
+        return 1
+    return treeWidth(node.trueBranch) + treeWidth(node.falseBranch)
+
+def treeHeight(node):
+    if not node:
+        return 0
+    return max(treeHeight(node.trueBranch), treeHeight(node.falseBranch)) + 1
+
+def drawNode(draw, node, x, y):
+    if node.isLeaf():
+        draw.text((x-20,y), str(node.result), (0,0,0))
+    else:
+        # false is the left branch
+        wt = treeWidth(node.trueBranch) * 100
+        wf = treeWidth(node.falseBranch) * 100
+        left = x - (wt + wf)/2
+        right = x + (wt + wf)/2
+        draw.text((x-20,y-10), str(node.testedAttribute), (0,0,0))
+        draw.line((x,y,left+wf/2,y+100), fill=(255,0,0))
+        draw.line((x,y,right-wt/2,y+100), fill=(255,0,0))
+        drawNode(draw, node.falseBranch, left+wf/2, y+100)
+        drawNode(draw, node.trueBranch, right-wt/2, y+100)
+
+def visualizeTree(rootNode):
+    w = treeWidth(rootNode) * 100
+    h = treeHeight(rootNode) * 100 + 50
+    print(w, h)
+    img = Image.new('RGB', (w,h), (255,255,255))
+    draw = ImageDraw.Draw(img)
+    drawNode(draw, rootNode, w/2, 50)
+    img.save('tree.jpg','JPEG')
+    plt.imshow(img)
+    plt.show()
+
+    # Tree Node class
+class TreeNode:
+       def __init__(self, testedAttribute=None, result=None):
+           self.testedAttribute = testedAttribute  # attribute that the node is testing
+           self.trueBranch = None
+           self.falseBranch = None
+           self.result = result  # tree.class in the manual, 0 or 1
+        def isLeaf(self):
+           return not (self.trueBranch or self.falseBranch)
