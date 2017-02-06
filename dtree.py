@@ -1,5 +1,6 @@
 import scipy.io as sio
 import numpy as np
+import pdb
 
 my_data1=sio.loadmat('cleandata_students.mat')
 data1=my_data1['x']
@@ -20,12 +21,12 @@ class tree:
 #Transformation of classifier to binary classifier for given emotion number
 def to_binary_classifier(classifier,number):
     list=[]
-    for x in range(0,len(classifier)):
+    for x in range(0,classifier.size):
         if classifier[x][0] == number:
             list.append(1)
         else:
             list.append(0)
-    return list
+    return np.asarray(list)
 
 #Checking if binary targets contain of one value (point uniquely to answer)
 def is_unique(bin_targets):
@@ -43,7 +44,7 @@ def majority_value(bin_targets):
 def choose_best_decision_attribute(examples,attributes,binary_targets):
     max = attribute_calculation(examples,0,binary_targets)
     index = 0
-    for x in range (1,attributes.size):
+    for x in range (0,attributes.size):
         value = attribute_calculation(examples,x,binary_targets)
         if max<value:
             max = value
@@ -63,7 +64,6 @@ def attribute_calculation(examples,index,binary_targets):
                 p1 += 1
             else:
                 p0 += 1
-
     p = np.sum(binary_targets)
     n = binary_targets.size-p
     e1 = entropy(p,n)
@@ -75,31 +75,74 @@ def attribute_calculation(examples,index,binary_targets):
 #Calculating entropy
 def entropy(p,n):
     from math import log
-    a=float(p)/(p+n)
-    b=float(n)/(p+n)
+    if p+n==0: return 0
+    a=p/(p+n)
+    b=n/(p+n)
     log2 = lambda x: log(x)/log(2)
+    if a==0 or b==0:
+        return 0
     return (-a*log2(a)-b*log2(b))
 
 
 def decision_tree_learning(examples,attributes,bin_targets):
-    if is_unique(bin_targets):
-        return tree(classification=bin_targets[0])
-    elif examples.size==0 or attributes.size==0:
+    if examples.size==0 or attributes.size==0:
         return tree(classification=majority_value(bin_targets))
+    elif is_unique(bin_targets):
+        return tree(classification=bin_targets[0])
     else:
         best_attribute=choose_best_decision_attribute(examples,attributes,bin_targets)
-        index=np.argwhere(attributes==best_attribute)
+        index=np.where(attributes==best_attribute)
+        index=index[0][0]
         attributes=np.delete(attributes,index)
-        examples=np.delete(examples,index,axis=1)
+
+
+
         ex1=examples[examples[:,index]==1]
         ex0=examples[examples[:,index]==0]
+
         bt1=bin_targets[examples[:,index]==1]
         bt0=bin_targets[examples[:,index]==0]
+
+
+        ex1=np.delete(ex1,index,axis=1)
+        ex0=np.delete(ex0,index,axis=1)
         return tree(best_attribute,[decision_tree_learning(ex1,attributes,bt1),decision_tree_learning(ex0,attributes,bt0)])
 
 
+def getwidth(tree):
+    if tree.kids==[]: return 1
+    return getwidth(tree.kids[0])+getwidth(tree.kids[1])
 
+def getdepth(tree):
+    if tree.kids==[0]: return 0
+    return max(getdepth(tree.kids[0]),getdepth(tree.kids[1]))+1
 
+def to_newick(tree):
+    if tree.op==None:
+        if tree.classification==1:
+            return "yes"
+        else:
+            return "no"
+    else:
+        newick="AU"+str(tree.op)
+        return "("+to_newick(tree.kids[0])+","+to_newick(tree.kids[1])+")"+newick
 
+attributes=np.asarray(list(range(1,46)))
+examples=data1
+bin_targets=to_binary_classifier(classification1,6)
+trained = decision_tree_learning(examples,attributes,bin_targets)
+print(trained.op)
+new=to_newick(trained)+";"
+print(new)
+from ete3 import Tree as Tr
+from ete3 import TreeStyle, Tree, TextFace, add_face_to_node
+t = Tr(new,format=8)
 
-
+ts = TreeStyle()
+ts.rotation = 90
+ts.show_leaf_name = False
+def my_layout(node):
+        F = TextFace(node.name, tight_text=True)
+        add_face_to_node(F, node, column=0, position="branch-right")
+ts.layout_fn = my_layout
+t.show(tree_style=ts)
