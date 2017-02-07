@@ -67,7 +67,6 @@ def attribute_calculation(examples,index,binary_targets):
 
     p = np.sum(binary_targets)
     n = binary_targets.size-p
-    print(n1, p1, n0, p0, n, p)
 
     if p+n==0:
         e1 = 0
@@ -139,5 +138,5 @@ def to_newick(tree):
         return "("+to_newick(tree.kids[0])+","+to_newick(tree.kids[1])+")"+newick
 
 
-decision_tree_learning(data1,np.arange(1,46),to_binary_classifier(classification1,1))
+print(to_newick(decision_tree_learning(data2,np.arange(1,46),to_binary_classifier(classification2,6))))
 
