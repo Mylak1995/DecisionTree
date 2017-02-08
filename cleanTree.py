@@ -42,6 +42,7 @@ def majority_value(bin_targets):
 #Calculating entropy
 def entropy(p,n):
     from math import log
+    if p+n==0: return 0
     a=p/(p+n)
     b=n/(p+n)
     log2 = lambda x: log(x)/log(2)
@@ -68,20 +69,9 @@ def attribute_calculation(examples,index,binary_targets):
     p = np.sum(binary_targets)
     n = binary_targets.size-p
 
-    if p+n==0:
-        e1 = 0
-    else:
-        e1 = entropy(p,n)
-
-    if p0+n0==0:
-        e2 = 0
-    else:
-        e2 = entropy(p0,n0)
-
-    if p1+n1==0:
-        e3 = 0
-    else:
-        e3 = entropy(p1,n1)
+    e1 = entropy(p,n)
+    e2 = entropy(p0,n0)
+    e3 = entropy(p1,n1)
 
     remainder = (p0+n0)*e2/(p+n)+(p1+n1)*e3/(p+n)
     return e1 - remainder
@@ -138,5 +128,77 @@ def to_newick(tree):
         return "("+to_newick(tree.kids[0])+","+to_newick(tree.kids[1])+")"+newick
 
 
-print(to_newick(decision_tree_learning(data2,np.arange(1,46),to_binary_classifier(classification2,6))))
 
+
+attributes=np.arange(1,46)
+examples=data1
+bin_targets=to_binary_classifier(classification1,5)
+trained = decision_tree_learning(examples,attributes,bin_targets)
+
+new=to_newick(trained)+";"
+
+from ete3 import Tree as Tr
+from ete3 import TreeStyle, Tree, TextFace, add_face_to_node
+t = Tr(new,format=8)
+
+ts = TreeStyle()
+ts.rotation = 90
+ts.show_leaf_name = False
+def my_layout(node):
+        F = TextFace(node.name, tight_text=True)
+        add_face_to_node(F, node, column=0, position="branch-right")
+ts.layout_fn = my_layout
+#t.show(tree_style=ts)
+
+#Tests one tree, returns depth of classification and classification
+def test_one_tree(tree,features,depth):
+    if tree.classification!=None:
+        return [tree.classification,depth+1]
+    if features[tree.op-1]==1:
+        return test_one_tree(tree.kids[0],features,depth+1)
+    else:
+        return test_one_tree(tree.kids[1],features,depth+1)
+
+#Tests set of trained trees T on x2
+def testTrees(T,x2):
+    L=[]
+    for index in range(0,x2.shape[0]):
+        output = 7
+        depth = 100
+        for t_num in range(0,T.size):
+            test=test_one_tree(T[t_num],x2[index],0)
+            if test[0]==1 and test[1]<depth:
+                output = t_num+1
+        L.append(output)
+    return L
+
+attributes=np.arange(1,46)
+examples=data1[:900,:]
+x2=data1[900:,:]
+classif=classification1[:900]
+test_d=classification1[900:]
+
+bin_targets=to_binary_classifier(classif,5)
+trained = decision_tree_learning(examples,attributes,bin_targets)
+
+t1 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,1))
+t2 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,2))
+t3 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,3))
+t4 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,4))
+t5 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,5))
+t6 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,6))
+
+T=np.array([t1,t2,t3,t4,t5,t6])
+
+L=testTrees(T,x2)
+
+print(len(L))
+print(test_d.size)
+
+counter=0
+for i in range(0,test_d.size):
+    if L[i]==test_d[i]:
+        counter+=1
+
+
+print(counter/test_d.size)
