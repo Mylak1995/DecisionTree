@@ -77,25 +77,29 @@ def attribute_calculation(examples,index,binary_targets):
     return e1 - remainder
 
 #Choosing maximum IG
-def choose_best_decision_attribute(examples,attributes,binary_targets):
-    index=0
+def choose_best_decision_attribute(examples,attributes,binary_targets,threshold):
+    index = 0
     max = attribute_calculation(examples,index,binary_targets)
     for x in range (0,attributes.size):
         value = attribute_calculation(examples,x,binary_targets)
         if max < value:
-            max=value
+            max = value
             index = x
+    if max < threshold:
+        return 0
     return attributes[index]
 
 #Learning
 
-def decision_tree_learning(examples,attributes,bin_targets):
+def decision_tree_learning(examples,attributes,bin_targets,threshold):
     if examples.size==0 or attributes.size==0:
         return tree(classification=majority_value(bin_targets))
     elif is_unique(bin_targets):
         return tree(classification=bin_targets[0])
     else:
-        best_attribute=choose_best_decision_attribute(examples,attributes,bin_targets)
+        best_attribute=choose_best_decision_attribute(examples,attributes,bin_targets,threshold)
+        if best_attribute==0:
+            return tree(classification=majority_value(bin_targets))
         index=np.where(attributes==best_attribute)
         index=index[0][0]
         attributes=np.delete(attributes,index)
@@ -109,9 +113,9 @@ def decision_tree_learning(examples,attributes,bin_targets):
         ex1=np.delete(ex1,index,axis=1)
         ex0=np.delete(ex0,index,axis=1)
 
-        t1=decision_tree_learning(ex1, attributes, bt1)
+        t1=decision_tree_learning(ex1, attributes, bt1, threshold)
 
-        t0=decision_tree_learning(ex0, attributes, bt0)
+        t0=decision_tree_learning(ex0, attributes, bt0, threshold)
 
         return tree(best_attribute,[t1,t0])
 
@@ -128,12 +132,24 @@ def to_newick(tree):
         return "("+to_newick(tree.kids[0])+","+to_newick(tree.kids[1])+")"+newick
 
 
+#Counting leafs
 
+def isLeaf(tree):
+    if tree.classification!=None:
+        return True
+    return False
 
+def countLeaves(tree):
+    if isLeaf(tree):
+        return 1
+    else:
+        return countLeaves(tree.kids[0])+countLeaves(tree.kids[1])
+
+'''
 attributes=np.arange(1,46)
 examples=data1
 bin_targets=to_binary_classifier(classification1,5)
-trained = decision_tree_learning(examples,attributes,bin_targets)
+trained = decision_tree_learning(examples,attributes,bin_targets,0)
 
 new=to_newick(trained)+";"
 
@@ -148,7 +164,8 @@ def my_layout(node):
         F = TextFace(node.name, tight_text=True)
         add_face_to_node(F, node, column=0, position="branch-right")
 ts.layout_fn = my_layout
-#t.show(tree_style=ts)
+t.show(tree_style=ts)
+'''
 
 #Tests one tree, returns depth of classification and classification
 def test_one_tree(tree,features,depth):
@@ -169,36 +186,63 @@ def testTrees(T,x2):
             test=test_one_tree(T[t_num],x2[index],0)
             if test[0]==1 and test[1]<depth:
                 output = t_num+1
+        #in case none of the trees predict the thing - randomize
+        #import random
+        #if output==7:
+        #    output=random.randint(1, 6)
+
         L.append(output)
     return L
 
-attributes=np.arange(1,46)
-examples=data1[:900,:]
-x2=data1[900:,:]
-classif=classification1[:900]
-test_d=classification1[900:]
+#Creating confusion matrix
 
-bin_targets=to_binary_classifier(classif,5)
-trained = decision_tree_learning(examples,attributes,bin_targets)
+def confusion_matrix_10_cross(data,classification,threshold):
+    ''' Creating slices'''
+    x_slices = np.vsplit(data[:900, :], 9)
+    x_l_slice = data[900:, :]
+    x_slices.append(x_l_slice)
 
-t1 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,1))
-t2 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,2))
-t3 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,3))
-t4 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,4))
-t5 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,5))
-t6 = decision_tree_learning(examples,attributes,to_binary_classifier(classif,6))
+    y_slices = np.vsplit(classification[:900], 9)
+    y_l_slice = classification[900:]
+    y_slices.append(y_l_slice)
 
-T=np.array([t1,t2,t3,t4,t5,t6])
+    confusion_matrix = np.zeros((6,7), dtype=np.int)
 
-L=testTrees(T,x2)
+    ''' i = ith cross-validation run '''
+    for i in range(0,10):
+        train_x = np.empty((0, 45), int)
+        train_y = np.empty((0,1), int)
 
-print(len(L))
-print(test_d.size)
+        for j in range (0,10):
+            if j==i:
+                test_x = x_slices[j]
+                test_y = y_slices[j]
+            else:
+                train_x = np.concatenate((train_x, x_slices[j]), axis=0)
+                train_y = np.concatenate((train_y, y_slices[j]), axis=0)
 
-counter=0
-for i in range(0,test_d.size):
-    if L[i]==test_d[i]:
-        counter+=1
+        attributes = np.arange(1, 46)
+
+        ''' Training on train data '''
+        L=[]
+
+        for i in range(1,7):
+            L.append(decision_tree_learning(train_x,attributes,to_binary_classifier(train_y,i),threshold))
+
+        T = np.array(L)
+
+        results = testTrees(T,test_x)
+
+        for i in range(0, test_y.size):
+            confusion_matrix[test_y[i] - 1, results[i] - 1]+=1
+
+    return confusion_matrix
+
+cm=confusion_matrix_10_cross(data1,classification1,0)
+print(cm)
 
 
-print(counter/test_d.size)
+for i in range(0,16):
+    print(i*0.005)
+    cm=confusion_matrix_10_cross(data1,classification1,i*0.01)
+    print((cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3]+cm[4,4]+cm[5,5])/np.sum(cm))
