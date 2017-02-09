@@ -217,9 +217,10 @@ def testTrees(T,x2):
                 output = t_num+1
             depths.append(test[1])
         #in case none of the trees predict the thing - randomize
-        #import random
+
         if output==7:
             output=depths.index(max(depths))+1
+            #import random
             #output=random.randint(1, 6)
 
         L.append(output)
