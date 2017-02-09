@@ -39,7 +39,7 @@ class tree:
                 node.kids=temp
                 node.op=tempop
                 non_changed+=1
-        print(non_changed,len(L))
+
         if non_changed==len(L):
             return False
         return self.pruneTree(validation_x,binary_classifier)
@@ -210,21 +210,24 @@ def testTrees(T,x2):
     for index in range(0,x2.shape[0]):
         output = 7
         depth = 100
+        depths=[]
         for t_num in range(0,T.size):
             test=test_one_tree(T[t_num],x2[index],0)
             if test[0]==1 and test[1]<depth:
                 output = t_num+1
+            depths.append(test[1])
         #in case none of the trees predict the thing - randomize
         #import random
-        #if output==7:
-        #    output=random.randint(1, 6)
+        if output==7:
+            output=depths.index(max(depths))+1
+            #output=random.randint(1, 6)
 
         L.append(output)
     return L
 
 #Creating confusion matrix
 
-def confusion_matrix_10_cross(data,classification,threshold):
+def confusion_matrix_10_cross(data,classification,threshold=0,prune=0):
     ''' Creating slices '''
     x_slices = np.vsplit(data[:900, :], 9)
     x_l_slice = data[900:, :]
@@ -234,7 +237,7 @@ def confusion_matrix_10_cross(data,classification,threshold):
     y_l_slice = classification[900:]
     y_slices.append(y_l_slice)
 
-    confusion_matrix = np.zeros((6,7), dtype=np.int)
+    confusion_matrix = np.zeros((6,6), dtype=np.int)
 
     ''' i = ith cross-validation run '''
     for i in range(0,10):
@@ -256,7 +259,8 @@ def confusion_matrix_10_cross(data,classification,threshold):
 
         for i in range(1,7):
             L.append(decision_tree_learning(train_x,attributes,to_binary_classifier(train_y,i),threshold))
-
+            if prune==1:
+                L[i-1].pruneTree(test_x,to_binary_classifier(test_y,i))
         T = np.array(L)
 
         results = testTrees(T,test_x)
@@ -265,10 +269,7 @@ def confusion_matrix_10_cross(data,classification,threshold):
             confusion_matrix[test_y[i] - 1, results[i] - 1]+=1
 
     return confusion_matrix
-'''
-cm=confusion_matrix_10_cross(data1,classification1,0)
-print(cm)
-'''
+
 
 '''
 for i in range(0,16):
@@ -276,11 +277,6 @@ for i in range(0,16):
     cm=confusion_matrix_10_cross(data1,classification1,i*0.01)
     print((cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3]+cm[4,4]+cm[5,5])/np.sum(cm))
 '''
-
-
-
-
-
 
 #Finds all nodes that are parents to two leaves
 def findAllParents(tree):
@@ -296,6 +292,7 @@ def findAllParents(tree):
         L.extend(K)
         L.extend(M)
         return L
+
 
 #Checks if a node is a parent to two leaves
 def isLeavesParent(tree):
@@ -327,3 +324,11 @@ def calculateRecall(tree,data,labels):
         if test_one_tree(tree,data[index],0)[0]==labels[index]:
             counter+=1
     return counter/data.shape[0]
+
+cm=confusion_matrix_10_cross(data1,classification1,prune=1)
+print(cm)
+print((cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3]+cm[4,4]+cm[5,5])/np.sum(cm))
+
+cm=confusion_matrix_10_cross(data1,classification1,prune=0)
+print(cm)
+print((cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3]+cm[4,4]+cm[5,5])/np.sum(cm))
