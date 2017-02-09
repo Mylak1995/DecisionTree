@@ -11,10 +11,12 @@ classification2=my_data2['y']
 
 
 class tree:
-    def __init__(self,op=None,kids=[],classification=None):
+    def __init__(self,op=None,kids=[],classification=None, pos=None, neg=None):
         self.op=op
         self.kids=kids
         self.classification=classification
+        self.pos=pos
+        self.neg=neg
 
 
 #Transformation of classifier to binary classifier for given emotion number
@@ -93,13 +95,13 @@ def choose_best_decision_attribute(examples,attributes,binary_targets,threshold)
 
 def decision_tree_learning(examples,attributes,bin_targets,threshold):
     if examples.size==0 or attributes.size==0:
-        return tree(classification=majority_value(bin_targets))
+        return tree(classification=majority_value(bin_targets),pos=np.sum(bin_targets),neg=bin_targets.size-np.sum(bin_targets))
     elif is_unique(bin_targets):
-        return tree(classification=bin_targets[0])
+        return tree(classification=bin_targets[0],pos=np.sum(bin_targets),neg=bin_targets.size-np.sum(bin_targets))
     else:
         best_attribute=choose_best_decision_attribute(examples,attributes,bin_targets,threshold)
         if best_attribute==0:
-            return tree(classification=majority_value(bin_targets))
+            return tree(classification=majority_value(bin_targets),pos=np.sum(bin_targets),neg=bin_targets.size-np.sum(bin_targets))
         index=np.where(attributes==best_attribute)
         index=index[0][0]
         attributes=np.delete(attributes,index)
@@ -117,7 +119,7 @@ def decision_tree_learning(examples,attributes,bin_targets,threshold):
 
         t0=decision_tree_learning(ex0, attributes, bt0, threshold)
 
-        return tree(best_attribute,[t1,t0])
+        return tree(best_attribute,[t1,t0],pos=np.sum(bin_targets),neg=bin_targets.size-np.sum(bin_targets))
 
 #Writing tree to newick format
 
@@ -197,7 +199,7 @@ def testTrees(T,x2):
 #Creating confusion matrix
 
 def confusion_matrix_10_cross(data,classification,threshold):
-    ''' Creating slices'''
+    ''' Creating slices '''
     x_slices = np.vsplit(data[:900, :], 9)
     x_l_slice = data[900:, :]
     x_slices.append(x_l_slice)
@@ -237,12 +239,53 @@ def confusion_matrix_10_cross(data,classification,threshold):
             confusion_matrix[test_y[i] - 1, results[i] - 1]+=1
 
     return confusion_matrix
-
+'''
 cm=confusion_matrix_10_cross(data1,classification1,0)
 print(cm)
+'''
 
-
+'''
 for i in range(0,16):
     print(i*0.005)
     cm=confusion_matrix_10_cross(data1,classification1,i*0.01)
     print((cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3]+cm[4,4]+cm[5,5])/np.sum(cm))
+'''
+
+#????????????????????????????????????????????????????????????????????????????????
+def pruneTree(tree,validation_x,binary_classifier):
+    L=findAllParents(tree)
+
+
+#Finds all nodes that are parents to two leaves
+def findAllParents(tree):
+    L=[]
+    if isLeaf(tree):
+        return L
+    elif isLeavesParent(tree):
+        L.append(tree)
+        return L
+    else:
+        K=findAllParents(tree.kids[0])
+        M=findAllParents(tree.kids[1])
+        L.append(K)
+        L.append(M)
+
+#Checks if a node is a parent to two leaves
+def isLeavesParent(tree):
+    if isLeaf(tree.kids[0]) and isLeaf(tree.kids[1]):
+        return True
+    return False
+
+
+
+train_x = data1[:700,:]
+validation_x = data1[700:900,:]
+test_x = data1[900:,:]
+
+train_y = classification1[:700,:]
+validation_y = classification1[700:900,:]
+test_y = classification1[900:,:]
+
+L=[]
+for i in range(1,7):
+    L.append(decision_tree_learning(train_x,attributes,to_binary_classifier(train_y,i),0))
