@@ -17,6 +17,32 @@ class tree:
         self.classification=classification
         self.pos=pos
         self.neg=neg
+    def pruneTree(self,validation_x,binary_classifier):
+        L=findAllParents(self)
+        non_changed=0
+        for node in L:
+            initial_recall=calculateRecall(self,validation_x,binary_classifier)
+
+            temp=node.kids
+            tempop=node.op
+            node.op=None
+            node.kids=[]
+
+            if node.pos>node.neg:
+                node.classification=1
+            else:
+                node.classification=0
+            end_recall=calculateRecall(self,validation_x,binary_classifier)
+
+            if end_recall<initial_recall:
+                node.classification=None
+                node.kids=temp
+                node.op=tempop
+                non_changed+=1
+        print(non_changed,len(L))
+        if non_changed==len(L):
+            return False
+        return self.pruneTree(validation_x,binary_classifier)
 
 
 #Transformation of classifier to binary classifier for given emotion number
@@ -251,9 +277,9 @@ for i in range(0,16):
     print((cm[0,0]+cm[1,1]+cm[2,2]+cm[3,3]+cm[4,4]+cm[5,5])/np.sum(cm))
 '''
 
-#????????????????????????????????????????????????????????????????????????????????
-def pruneTree(tree,validation_x,binary_classifier):
-    L=findAllParents(tree)
+
+
+
 
 
 #Finds all nodes that are parents to two leaves
@@ -267,8 +293,9 @@ def findAllParents(tree):
     else:
         K=findAllParents(tree.kids[0])
         M=findAllParents(tree.kids[1])
-        L.append(K)
-        L.append(M)
+        L.extend(K)
+        L.extend(M)
+        return L
 
 #Checks if a node is a parent to two leaves
 def isLeavesParent(tree):
@@ -277,7 +304,7 @@ def isLeavesParent(tree):
     return False
 
 
-
+'''
 train_x = data1[:700,:]
 validation_x = data1[700:900,:]
 test_x = data1[900:,:]
@@ -286,6 +313,17 @@ train_y = classification1[:700,:]
 validation_y = classification1[700:900,:]
 test_y = classification1[900:,:]
 
+
 L=[]
 for i in range(1,7):
     L.append(decision_tree_learning(train_x,attributes,to_binary_classifier(train_y,i),0))
+
+L[i-1].pruneTree(validation_x,to_binary_classifier(train_y,i))
+'''
+#Calculates recall on single tree
+def calculateRecall(tree,data,labels):
+    counter=0
+    for index in range(0,data.shape[0]):
+        if test_one_tree(tree,data[index],0)[0]==labels[index]:
+            counter+=1
+    return counter/data.shape[0]
