@@ -1,3 +1,10 @@
+How to test trees:
+1) pip3 install numpy
+2) pip3 install scipy
+3) pipe install matplotlib
+4) Edit line x, y = load_data(DATA_FILE) in testTrees.py, substitute DATA_FILE with your .mat filepath.
+5) Run testTrees.py using python3 (python3 testTrees.py)
+
 How to run:
 We implemented our assignment using Python3 with Jupyter Notebook (Ipython Notebook). There are a few steps needed
 to run the code on a lab machine:
@@ -14,4 +21,5 @@ Installing Ipython3 Notebook:
 9) Click DecisionTree.ipynb
 10) Click on the first cell, hold L-Shift and press Enter, this will run the code in the cell and jump
     to the next cell. It should be possible to just keep pressing L-Shift + Enter repeatedly to
-    evaluate all cells.
+    evaluate all cells. 
+OR: visit https://try.jupyter.org/ and uplad file DecisionTree.ipynb
