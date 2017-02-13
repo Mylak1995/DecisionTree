@@ -119,7 +119,7 @@ def test_trees(T, x2, random=0):
 TESTING
 '''
 
-x, y = load_data('cleandata_students.mat')
+x, y = load_data(DATA_FILE)
 
 T=[]
 for i in range(1,7):
