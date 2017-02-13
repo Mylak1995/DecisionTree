@@ -115,15 +115,17 @@ def test_trees(T, x2, random=0):
         L.append(output)
     return L
 
+'''
+TESTING
+'''
 
-if __name__=='main':
-    #Change TEST DATA to filename of the test data
-    x, y = load_data(TEST DATA)
+x, y = load_data('cleandata_students.mat')
 
-    T=[]
-    for i in range(1,7):
-        T.append(load_from_mat('tree_'+label_to_string(i)+'.mat'))
-    np.array(T)
+T=[]
+for i in range(1,7):
+    T.append(load_from_mat('tree_'+label_to_string(i)+'.mat'))
+T=np.array(T)
 
-    #returns Python list of prediction labels
-    Results = test_trees(T,x)
+#returns Python list of prediction labels
+Results = test_trees(T,x)
+print(Results)
