@@ -1,0 +1,17 @@
+How to run:
+We implemented our assignment using Python3 with Jupyter Notebook (Ipython Notebook). There are a few steps needed
+to run the code on a lab machine:
+
+Installing Ipython3 Notebook:
+1) pip3 install ipython
+2) pip3 install numpy
+3) pip3 install scipy
+4) pip3 install matplotlib
+5) If there are any other missing libraries try using: pip3 install <library name>
+6) cd <our project dir containing DecisionTree.ipynb file>
+7) ~/.local/bin/ipython3 notebook
+8) A browser should open automatically after a while, if it doesn't, open one and go to localhost:8888
+9) Click DecisionTree.ipynb
+10) Click on the first cell, hold L-Shift and press Enter, this will run the code in the cell and jump
+    to the next cell. It should be possible to just keep pressing L-Shift + Enter repeatedly to
+    evaluate all cells.
