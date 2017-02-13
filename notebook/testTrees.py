@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.io as sio
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
+
 
 #Class Tree
 
