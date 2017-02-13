@@ -22,4 +22,4 @@ Installing Ipython3 Notebook:
 10) Click on the first cell, hold L-Shift and press Enter, this will run the code in the cell and jump
     to the next cell. It should be possible to just keep pressing L-Shift + Enter repeatedly to
     evaluate all cells. 
-OR: visit https://try.jupyter.org/ and uplad file DecisionTree.ipynb
+OR: visit https://try.jupyter.org/ and uplad file DecisionTree.ipynb and the data files
